@@ -1,0 +1,13 @@
+prefix=/Users/kuzeyarar/Desktop/IJCAI_2023/IJCAI2023/.conda
+exec_prefix=/Users/kuzeyarar/Desktop/IJCAI_2023/IJCAI2023/.conda
+libdir=/Users/kuzeyarar/Desktop/IJCAI_2023/IJCAI2023/.conda/lib
+sharedlibdir=/Users/kuzeyarar/Desktop/IJCAI_2023/IJCAI2023/.conda/lib
+includedir=/Users/kuzeyarar/Desktop/IJCAI_2023/IJCAI2023/.conda/include
+
+Name: zlib
+Description: zlib compression library
+Version: 1.2.13
+
+Requires:
+Libs: -L${libdir} -L${sharedlibdir} -lz
+Cflags: -I${includedir}
