@@ -14,6 +14,9 @@ from scenario import Running, table_hockey, football, wrestling, billiard, \
 
 from AI_olympics import AI_Olympics
 
+from train.algo.ppo import PPO
+
+
 import random
 import json
 import imageio
@@ -28,7 +31,7 @@ def load_record(path):
     filejson = json.load(file)
     return filejson
 
-RENDER = True
+RENDER = False  # Set to True if you want to render the game
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

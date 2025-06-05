@@ -252,17 +252,17 @@ class env_test(OlympicsBase):
 parser = argparse.ArgumentParser()
 parser.add_argument('--game_name', default="Learn2Avoid", type=str, help='running-competition/table-hockey/football/wrestling')
 parser.add_argument('--algo', default="ppo", type=str, help="ppo/sac")
-parser.add_argument('--max_episodes', default=1500, type=int)
-parser.add_argument('--episode_length', default=500, type=int)
+parser.add_argument('--max_episodes', default=10, type=int)
+parser.add_argument('--episode_length', default=10, type=int)
 
 parser.add_argument('--seed', default=1, type=int)
 
-parser.add_argument("--save_interval", default=100, type=int)
+parser.add_argument("--save_interval", default=1, type=int)
 parser.add_argument("--model_episode", default=0, type=int)
 
 parser.add_argument("--load_model", action='store_true')
 parser.add_argument("--load_run", default=2, type=int)
-parser.add_argument("--load_episode", default=900, type=int)
+parser.add_argument("--load_episode", default=1, type=int)
 
 
 device = 'cpu'
