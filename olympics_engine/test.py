@@ -46,7 +46,7 @@ def load_record(path):
         return json.load(file)
 
 
-RENDER = False  # Set to True if you want to render the game
+RENDER = True  # Set to True if you want to render the game
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         help='Which subgame to run (e.g. "seeks", "football", etc.). If omitted, uses --game_name.'
     )
     parser.add_argument("--seed", default=1, type=int)
-    parser.add_argument("--load_model", action='store_true',
+    parser.add_argument("--load_model",default=True, action='store_true',
                         help="Whether to load a pretrained PPO model")
     parser.add_argument("--game_name", default="Learn2Avoid", type=str,
                         help="Name of the folder under train/models (e.g. Learn2Avoid). Also used as environment if --map is not provided.")
@@ -63,6 +63,8 @@ if __name__ == "__main__":
                         help="Which run directory to load (e.g. run1)")
     parser.add_argument("--load_episode", default=10, type=int,
                         help="Which episode checkpoint to load (i.e. actor_<episode>.pth)")
+    parser.add_argument("--capture_frames", default=False, action='store_true',
+                        help="If set, capture frames for GIF output")
     args = parser.parse_args()
 
     # If --map is not provided, default to the training environment name
@@ -129,9 +131,8 @@ if __name__ == "__main__":
 
         # Build run_dir pointing to train/models/<game_name>/run<load_run>
         run_dir = os.path.join(
-            project_root,
-            "olympics_engine",
-            "train",
+            project_root,#/Users/kuzeyarar/Desktop/IJCAI_2023/IJCAI2023/
+            "rl_trainer",
             "models",
             args.game_name,
             f"run{args.load_run}"
@@ -176,16 +177,7 @@ if __name__ == "__main__":
 
     # ─── Run the episode ───────────────────────────────────────────────────────────
     obs = game.reset()
-    # Print out the shape of obs to confirm it matches the network’s expected input
-    try:
-        if agent_num == 2:
-            print("Initial obs[0] shape:", obs[0].shape, "; obs[1] shape:", obs[1].shape)
-        else:
-            # Learn2AvoidEnv returns a list containing one numpy array
-            print("Initial obs shape:", obs[0].shape)
-    except:
-        print("Initial obs has no shape attribute, raw value:", obs)
-
+   
     frames = []
     done = False
     step = 0
@@ -199,26 +191,29 @@ if __name__ == "__main__":
 
         if agent_num == 2:
             if args.load_model:
-                obs0_flat = obs[0].flatten()
-                print(f"Flattened obs size for agent 1: {obs0_flat.shape[0]}")
+                raw = obs[0]['agent_obs'] if isinstance(obs[0], dict) else obs[0]
+                obs0_flat = raw.flatten()
                 with torch.no_grad():
                     action_index, _ = agent.select_action(obs0_flat, False)
                 action1 = actions_map[action_index]
             else:
-                action1 = agent.act(obs[0])
+                raw = obs[0]['agent_obs'] if isinstance(obs[0], dict) else obs[0]
+                action1 = agent.act(raw)
 
             action2 = rand_agent.act(obs[1])
             action = [action1, action2]
 
         else:  # agent_num == 1 (Learn2Avoid)
             if args.load_model:
-                obs0_flat = obs[0].flatten()  # fix: index into the list first
-                print(f"Flattened obs size for the single agent: {obs0_flat.shape[0]}")
+                raw = obs[0]['agent_obs'] if isinstance(obs[0], dict) else obs[0]
+                obs0_flat = raw.flatten()
+                
                 with torch.no_grad():
                     action_index, _ = agent.select_action(obs0_flat, False)
                 action1 = actions_map[action_index]
             else:
-                action1 = agent.act(obs[0])
+                raw = obs[0]['agent_obs'] if isinstance(obs[0], dict) else obs[0]
+                action1 = agent.act(raw)
 
             action = [action1]
 
@@ -227,13 +222,14 @@ if __name__ == "__main__":
 
         if RENDER:
             game.render()
-            screen = pygame.display.get_surface()
-            if screen is not None:
-                img = pygame.surfarray.array3d(screen)
-                img = img.swapaxes(0, 1)
-                frames.append(img)
-            else:
-                print(f"Warning: Screen surface not available at step {step}")
+            if args.capture_frames:
+                screen = pygame.display.get_surface()
+                if screen is not None:
+                    img = pygame.surfarray.array3d(screen)
+                    img = img.swapaxes(0, 1)
+                    frames.append(img)
+                else:
+                    print(f"Warning: Screen surface not available at step {step}")
 
     duration_t = time.time() - time_epi_s
     print(
@@ -248,11 +244,13 @@ if __name__ == "__main__":
     gif_filename = f"{args.map}.gif"
     save_path = os.path.join(save_folder, gif_filename)
 
-    if len(frames) > 0:
+    if args.capture_frames and len(frames) > 0:
         imageio.mimsave(save_path, frames, fps=30)
         print("Saved successfully!")
-    else:
+    elif args.capture_frames:
         print("No frames captured. GIF not saved.")
 
 # Example to run:
 # python test.py --map Learn2Avoid --seed 1 --load_model --game_name Learn2Avoid --load_run 1 --load_episode 10
+# python test.py --map table-hockey --seed 1 --load_model --game_name table-hockey --load_run 1 --load_episode 33000
+# python test.py --map Learn2Avoid --seed 1  --game_name Learn2Avoid --load_run 8 --load_episode 700

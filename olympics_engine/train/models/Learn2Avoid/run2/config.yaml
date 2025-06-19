@@ -1,0 +1,10 @@
+algo: ppo
+episode_length: 500
+game_name: Learn2Avoid
+load_episode: 1
+load_model: false
+load_run: 2
+max_episodes: 1000
+model_episode: 0
+save_interval: 100
+seed: 1
