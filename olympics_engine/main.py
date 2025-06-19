@@ -37,6 +37,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--map', default="seeks", type=str,
                         help='running/table-hockey/football/wrestling/billiard/curling/all/all_v2')
+    parser.add_argument('--save_folder', default='/Users/kuzeyarar/Desktop/Gameplay', type=str,
+                        help='Folder to save the GIFs')
     parser.add_argument("--seed", default=1, type=int)
     args = parser.parse_args()
     
@@ -137,7 +139,7 @@ if __name__ == "__main__":
               "time-per-step:", (duration_t) / step)
 
         # Save gameplay if any frame was captured
-        save_folder = '/Users/kuzeyarar/Desktop/Gameplay'
+        save_folder = args.save_folder 
         os.makedirs(save_folder, exist_ok=True)
         gif_filename = f"{args.map}.gif"
         save_path = os.path.join(save_folder, gif_filename)

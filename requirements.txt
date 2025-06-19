@@ -14,3 +14,9 @@ pyyaml
 tensorboard
 gym
 tabulate
+setuptools==68.
+scikit-image==0.19.3
+pandas==1.5.2
+scikit-learn==1.2.0
+networkx
+fcit
