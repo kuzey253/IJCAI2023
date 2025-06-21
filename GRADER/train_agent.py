@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--exp_name', type=str, required=True)
 parser.add_argument('--mode', type=str, required=True, choices=['IID', 'OOD-S'], help='IID means i.i.d. samples and OOD-S means spurious correlation')
 parser.add_argument('--agent', type=str, default='GRADER', choices=['GRADER', 'SAC'])
-parser.add_argument('--grader_model', type=str, default='mlp', choices=['causal', 'full', 'mlp', 'gnn'], help='type of model used in GRADER')
+parser.add_argument('--grader_model', type=str, default='causal', choices=['causal', 'full', 'mlp', 'gnn'], help='type of model used in GRADER')
 
 parser.add_argument('--env', type=str, default='chemistry', help='name of environment')
 parser.add_argument('--graph', type=str, default='chain', choices=['collider', 'chain', 'full', 'jungle'], help='type of groundtruth graph in chemistry')

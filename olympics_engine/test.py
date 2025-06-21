@@ -65,7 +65,10 @@ if __name__ == "__main__":
                         help="Which episode checkpoint to load (i.e. actor_<episode>.pth)")
     parser.add_argument("--capture_frames", default=False, action='store_true',
                         help="If set, capture frames for GIF output")
+    parser.add_argument("--render", action='store_true', default=False,
+                        help='Render the game visually. If not set, the game runs without rendering.')
     args = parser.parse_args()
+    RENDER = args.render
 
     # If --map is not provided, default to the training environment name
     if args.map is None:
