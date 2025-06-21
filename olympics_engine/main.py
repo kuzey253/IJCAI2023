@@ -31,7 +31,7 @@ def load_record(path):
     filejson = json.load(file)
     return filejson
 
-RENDER = False  # Set to True if you want to render the game
+RENDER = True  # Set to True if you want to render the game
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", default=1, type=int)
     args = parser.parse_args()
     
-    args.map = 'seeks'
+    args.map = 'running-competition'  # For testing purposes, you can change this to any map you want
 
     for i in range(1):
         if 'all' not in args.map:

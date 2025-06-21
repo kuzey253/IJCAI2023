@@ -213,6 +213,33 @@
     "obs_cfg": {
       "minimap": false
     },
+    "agent": {
+      "num": 2,
+      "objects": {
+        "component1": {
+          "initial_position": [
+            75.0,
+            325.0
+          ],
+          "mass": 1,
+          "radius": 12.5,
+          "color": "light red",
+          "vis": 200,
+          "vis_clear": 5
+        },
+        "component2": {
+          "initial_position": [
+            75.0,
+            375.0
+          ],
+          "mass": 1,
+          "radius": 12.5,
+          "color": "blue",
+          "vis": 200,
+          "vis_clear": 5
+        }
+      }
+    },
     "view": {
       "width": 600,
       "height": 600,
