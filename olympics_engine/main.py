@@ -37,12 +37,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--map', default="seeks", type=str,
                         help='running/table-hockey/football/wrestling/billiard/curling/all/all_v2')
-    parser.add_argument('--save_folder', default='/Users/kuzeyarar/Desktop/Gameplay', type=str,
+    parser.add_argument('--save_folder', default='logs', type=str,
                         help='Folder to save the GIFs')
+    parser.add_argument('--render', action='store_true', default=False,
+                        help='Render the game visually')
     parser.add_argument("--seed", default=1, type=int)
     args = parser.parse_args()
-    
-    args.map = 'running-competition'  # For testing purposes, you can change this to any map you want
+
+    RENDER = args.render
 
     for i in range(1):
         if 'all' not in args.map:
