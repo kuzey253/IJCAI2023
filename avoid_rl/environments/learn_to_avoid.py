@@ -66,7 +66,7 @@ class LearnToAvoidEnv(OlympicsBase):
         self.recent_positions = deque(maxlen=20)
         
         self.checkpoints = [
-            [150, 350], [275, 350], [375, 325], [500, 300], [575, 375], [650, 350]
+            [130, 325], [220, 375], [320, 300], [420, 375], [520, 300], [600, 350]
         ]
         self.current_checkpoint = 0
         self.checkpoint_reached = [False] * len(self.checkpoints)
@@ -123,6 +123,7 @@ class LearnToAvoidEnv(OlympicsBase):
         
         return obs_next, step_reward, done, self.info
 
+    
     def get_reward(self, previous_pos):
         agent_reward = [0. for _ in range(self.agent_num)]
         
@@ -131,79 +132,164 @@ class LearnToAvoidEnv(OlympicsBase):
             
             if self.agent_list[agent_idx].finished:
                 if self.agent_list[agent_idx].color == self.cross_color:
-                    agent_reward[agent_idx] = 200.0
+                    agent_reward[agent_idx] = 500.0  # Increased success reward
                 elif self.agent_list[agent_idx].color == self.penalty_color:
-                    agent_reward[agent_idx] = -50.0
+                    agent_reward[agent_idx] = -50.0  # Harsher obstacle penalty
                     self.obstacle_collision_count += 1
             else:
-                agent_reward[agent_idx] -= 0.01
+                # 1. Reduced time penalty to encourage exploration
+                agent_reward[agent_idx] -= 0.001
                 
-                checkpoint_reward = self.get_checkpoint_reward(current_pos)
-                agent_reward[agent_idx] += checkpoint_reward
-                
+                # 2. Improved distance-based reward with smoother scaling
                 current_dist = point2point(current_pos, self.goal_pos)
                 prev_dist = point2point(previous_pos[agent_idx], self.goal_pos)
                 
+                # Progress reward with exponential scaling for being closer to goal
                 if current_dist < prev_dist:
-                    distance_factor = max(0.1, 1.0 - (current_dist / 600))
-                    distance_reward = (prev_dist - current_dist) * distance_factor * 0.2
-                    agent_reward[agent_idx] += distance_reward
+                    progress = (prev_dist - current_dist)
+                    # Scale reward based on how close to goal (more reward when closer)
+                    distance_scale = 1.0 + (650 - current_pos[0]) / 650  # Higher reward closer to goal
+                    agent_reward[agent_idx] += progress * 2.0 * distance_scale
+                elif current_dist > prev_dist:
+                    # Small penalty for moving away from goal
+                    agent_reward[agent_idx] -= (current_dist - prev_dist) * 0.5
                 
+                # 3. Improved obstacle avoidance with graduated penalties
                 min_obstacle_dist = self.get_min_obstacle_distance(current_pos)
-                if min_obstacle_dist < 20:
-                    x_progress = current_pos[0] - previous_pos[agent_idx][0]
-                    if x_progress <= 0:
-                        agent_reward[agent_idx] -= 1.0
-                elif min_obstacle_dist < 35:
-                    if self.is_moving_toward_obstacle(current_pos, previous_pos[agent_idx]):
-                        agent_reward[agent_idx] -= 0.2
+                if min_obstacle_dist < 20:  # Danger zone
+                    penalty = (20 - min_obstacle_dist) / 20  # Normalized penalty
+                    agent_reward[agent_idx] -= penalty * 5.0
+                elif min_obstacle_dist < 35:  # Warning zone
+                    penalty = (35 - min_obstacle_dist) / 35
+                    agent_reward[agent_idx] -= penalty * 1.0
+                else:
+                    # Small reward for maintaining safe distance
+                    agent_reward[agent_idx] += 0.1
                 
-                x_progress = current_pos[0] - previous_pos[agent_idx][0]
-                if x_progress > 0:
-                    progress_multiplier = 1 + (current_pos[0] - 75) / 575
-                    agent_reward[agent_idx] += x_progress * 0.05 * progress_multiplier
+                # 4. Velocity-based reward to encourage movement
+                velocity = point2point(current_pos, previous_pos[agent_idx])
+                if velocity > 0.5:  # Moving
+                    agent_reward[agent_idx] += min(velocity * 0.2, 1.0)  # Cap velocity reward
+                elif velocity < 0.1:  # Nearly stationary
+                    self.stuck_counter += 1
+                    if self.stuck_counter > 10:
+                        agent_reward[agent_idx] -= 0.5 * (self.stuck_counter - 10) / 10
+                else:
+                    self.stuck_counter = max(0, self.stuck_counter - 1)
                 
-                exploration_reward = self.get_exploration_reward(current_pos)
+                # 5. Wall avoidance with prediction
+                wall_penalty = self.get_wall_proximity_penalty(current_pos)
+                agent_reward[agent_idx] -= wall_penalty
+                
+                # 6. Improved checkpoint system with path guidance
+                checkpoint_reward = self.get_improved_checkpoint_reward(current_pos)
+                agent_reward[agent_idx] += checkpoint_reward
+                
+                # 7. Exploration bonus based on area coverage
+                exploration_reward = self.get_exploration_reward_improved(current_pos)
                 agent_reward[agent_idx] += exploration_reward
                 
-                if current_pos[0] > self.best_x_progress:
-                    self.best_x_progress = current_pos[0]
-                    self.stagnation_counter = 0
-                    agent_reward[agent_idx] += 2.0
-                else:
-                    self.stagnation_counter += 1
-                    if self.stagnation_counter > 50:
-                        agent_reward[agent_idx] -= 0.5
-                
-                if self.check_wall_collision(current_pos, previous_pos[agent_idx]):
-                    agent_reward[agent_idx] -= 5.0
-                
-                if self.prev_pos is not None:
-                    movement = point2point(current_pos, self.prev_pos)
-                    if movement < 1.5:
-                        self.stuck_counter += 1
-                        if self.stuck_counter > self.max_stuck_steps:
-                            agent_reward[agent_idx] -= 3.0
-                    else:
-                        self.stuck_counter = max(0, self.stuck_counter - 1)
-                
-                if self.step_cnt >= self.max_step:
-                    progress_ratio = (current_pos[0] - 75) / (650 - 75)
-                    agent_reward[agent_idx] = -20.0 + (progress_ratio * 15.0)
-            
             self.prev_pos = current_pos.copy()
         
         return agent_reward
 
+    def get_wall_proximity_penalty(self, pos):
+        """Penalty for being too close to walls"""
+        penalty = 0
+        
+        # Left wall
+        if pos[0] < 70:
+            penalty += (70 - pos[0]) * 0.1
+        
+        # Top/bottom walls
+        if pos[1] < 270:
+            penalty += (270 - pos[1]) * 0.1
+        elif pos[1] > 430:
+            penalty += (pos[1] - 430) * 0.1
+        
+        return penalty
+
+    def get_improved_checkpoint_reward(self, pos):
+        """Improved checkpoint system with directional guidance"""
+        reward = 0
+        
+        # Check if approaching next checkpoint
+        if self.current_checkpoint < len(self.checkpoints):
+            next_checkpoint = self.checkpoints[self.current_checkpoint]
+            distance = point2point(pos, next_checkpoint)
+            
+            # Large reward for reaching checkpoint
+            if distance < 40:
+                if not self.checkpoint_reached[self.current_checkpoint]:
+                    self.checkpoint_reached[self.current_checkpoint] = True
+                    reward += 50.0 * (self.current_checkpoint + 1)  # Progressive rewards
+                    self.current_checkpoint = min(self.current_checkpoint + 1, len(self.checkpoints) - 1)
+            
+            # Guidance reward for moving toward next checkpoint
+            elif distance < 80:
+                # Reward based on how close to checkpoint
+                proximity_reward = (80 - distance) / 80 * 2.0
+                reward += proximity_reward
+        
+        return reward
+
+    def get_exploration_reward_improved(self, pos):
+        """Improved exploration reward with spatial grid"""
+        if not hasattr(self, 'visited_grid'):
+            # Create a grid to track visited areas
+            self.visited_grid = set()
+            self.grid_size = 25  # 25x25 pixel grid cells
+        
+        # Convert position to grid coordinates
+        grid_x = int(pos[0] // self.grid_size)
+        grid_y = int(pos[1] // self.grid_size)
+        grid_cell = (grid_x, grid_y)
+        
+        # Reward for visiting new areas
+        if grid_cell not in self.visited_grid:
+            self.visited_grid.add(grid_cell)
+            return 2.0  # Exploration bonus
+        
+        return 0
+
+    # Additional method to add to the class
+    def get_directional_guidance(self, current_pos, previous_pos):
+        """Provide reward for moving in generally correct direction"""
+        # Vector toward goal
+        to_goal = [self.goal_pos[0] - current_pos[0], self.goal_pos[1] - current_pos[1]]
+        
+        # Movement vector
+        movement = [current_pos[0] - previous_pos[0], current_pos[1] - previous_pos[1]]
+        
+        # Normalize vectors
+        movement_mag = math.sqrt(movement[0]**2 + movement[1]**2)
+        goal_mag = math.sqrt(to_goal[0]**2 + to_goal[1]**2)
+        
+        if movement_mag > 0 and goal_mag > 0:
+            # Dot product gives us alignment
+            dot_product = (movement[0] * to_goal[0] + movement[1] * to_goal[1]) / (movement_mag * goal_mag)
+            
+            # Reward alignment with goal direction
+            if dot_product > 0:
+                return dot_product * 0.5
+            else:
+                return dot_product * 0.2  # Smaller penalty for wrong direction
+        
+        return 0
     def get_checkpoint_reward(self, pos):
+        """Improved checkpoint system"""
         reward = 0
         for i, checkpoint in enumerate(self.checkpoints):
             if not self.checkpoint_reached[i]:
-                if point2point(pos, checkpoint) < 40:
+                distance = point2point(pos, checkpoint)
+                if distance < 50:  # Larger checkpoint radius
                     self.checkpoint_reached[i] = True
                     self.current_checkpoint = i + 1
-                    reward += 10.0 * (i + 1)
+                    # Increasing rewards for later checkpoints
+                    reward += 15.0 * (i + 1)
                     break
+                elif distance < 80:  # Approaching checkpoint
+                    reward += 1.0 / (distance / 10)  # Gradual approach reward
         return reward
 
     def get_exploration_reward(self, pos):
@@ -230,6 +316,57 @@ class LearnToAvoidEnv(OlympicsBase):
 
     def check_wall_collision(self, current_pos, previous_pos):
         return point2point(current_pos, previous_pos) < 1.0 and self.step_cnt > 1
+    
+    def get_navigation_reward(self, current_pos, previous_pos):
+        """Reward for smart navigation around obstacles"""
+        reward = 0
+        
+        # Find nearest obstacle
+        min_dist = float('inf')
+        nearest_obstacle = None
+        for obstacle in self.penalty:
+            obs_center = [(obstacle.init_pos[0][0] + obstacle.init_pos[1][0]) / 2,
+                        (obstacle.init_pos[0][1] + obstacle.init_pos[1][1]) / 2]
+            dist = point2point(current_pos, obs_center)
+            if dist < min_dist:
+                min_dist = dist
+                nearest_obstacle = obs_center
+        
+        if nearest_obstacle and min_dist < 50:  # If close to an obstacle
+            # Calculate if agent is moving around obstacle (not directly toward/away)
+            to_obstacle = [nearest_obstacle[0] - current_pos[0], nearest_obstacle[1] - current_pos[1]]
+            movement = [current_pos[0] - previous_pos[0], current_pos[1] - previous_pos[1]]
+            
+            # Normalize vectors
+            if sum(abs(x) for x in movement) > 0:
+                movement_mag = math.sqrt(movement[0]**2 + movement[1]**2)
+                if movement_mag > 0:
+                    movement_norm = [movement[0]/movement_mag, movement[1]/movement_mag]
+                    to_obstacle_mag = math.sqrt(to_obstacle[0]**2 + to_obstacle[1]**2)
+                    to_obstacle_norm = [to_obstacle[0]/to_obstacle_mag, to_obstacle[1]/to_obstacle_mag]
+                    
+                    # Dot product - if close to 0, agent is moving perpendicular (good for navigation)
+                    dot_product = movement_norm[0] * to_obstacle_norm[0] + movement_norm[1] * to_obstacle_norm[1]
+                    
+                    # Reward perpendicular movement when close to obstacles
+                    if abs(dot_product) < 0.5:  # Moving roughly perpendicular
+                        reward += 0.3
+                    
+                    # Small reward for moving away from obstacles
+                    if dot_product < -0.3:  # Moving away
+                        reward += 0.1
+        
+        return reward
+    
+    def check_wall_collision_improved(self, current_pos, previous_pos):
+        """Improved wall collision detection"""
+        # Check if agent is at the boundaries
+        if (current_pos[0] <= 55 or current_pos[0] >= 645 or 
+            current_pos[1] <= 255 or current_pos[1] >= 445):
+            # Check if movement is very small (stuck against wall)
+            movement = point2point(current_pos, previous_pos)
+            return movement < 1.0 and self.step_cnt > 5
+        return False
 
     def is_terminal(self):
         if self.step_cnt >= self.max_step:

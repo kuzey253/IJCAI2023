@@ -152,7 +152,17 @@ class OlympicsBase(object):
         return seed
 
     def set_seed(self, seed=None):
-        pass
+        self.random_seed = seed
+        random.seed(self.random_seed)
+        np.random.seed(self.random_seed)
+
+    def seed(self, seed=None):
+        """
+        Sets the seed and returns it. This is the standard Gym/Gymnasium interface.
+        """
+        random.seed(seed)
+        np.random.seed(seed)
+        return [seed]
 
     def init_state(self):
         self.agent_pos = []

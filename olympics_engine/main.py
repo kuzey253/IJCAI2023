@@ -31,7 +31,7 @@ def load_record(path):
     filejson = json.load(file)
     return filejson
 
-RENDER = False  # Set to True if you want to render the game
+RENDER = True  # Set to True if you want to render the game
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

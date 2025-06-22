@@ -78,15 +78,29 @@ class Running_competition(OlympicsBase):
         pass
 
     def get_reward(self):
+        """
+        This function determines the terminal reward and win_signal.
 
-        agent_reward = [0. for _ in range(self.agent_num)]
+        Returns:
+            A list of two elements: [reward_value, win_signal].
+            - reward_value: A general score (e.g., 100 for a win).
+            - win_signal: An integer indicating the winner:
+                 +1 if Agent 0 (Purple) wins.
+                 -1 if Agent 1 (Green) wins.
+                  0 in all other cases (ongoing, draw).
+        """
+        agent_0_finished = self.agent_list[0].finished
+        agent_1_finished = self.agent_list[1].finished
 
-
-        for agent_idx in range(self.agent_num):
-            if self.agent_list[agent_idx].finished:
-                agent_reward[agent_idx] = 1.
-
-        return agent_reward
+        if agent_0_finished and not agent_1_finished:
+            # Agent 0 wins
+            return [100.0, 1]
+        elif agent_1_finished and not agent_0_finished:
+            # Agent 1 wins
+            return [100.0, -1] # The reward value can be positive, the signal is what matters
+        else:
+            # Game is ongoing or a true simultaneous draw
+            return [0.0, 0]
 
     def is_terminal(self):
 
