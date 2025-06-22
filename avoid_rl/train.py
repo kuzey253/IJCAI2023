@@ -137,16 +137,19 @@ def main(args):
 
                 # A true win for OUR agent is crossing the finish line.
                 # This is the only way `win_is` should be 1.
-                win_is = 1 if final_progress_ctrl_agent >= 1.0 else 0
+                win_is = 1 if win_signal == 1 else 0
+                # If the opponent agent won, then we lost.
+                if win_signal == -1:
+                    win_is = -1
                 
                 # For logging, we determine the definitive outcome.
                 outcome_msg = "Result: "
                 if win_signal == 1:
                     # Agent 0 won. Since we control Agent 0, this is OUR win.
-                    outcome_msg += "Controlled Agent (Purple/Team 0) WON"
+                    outcome_msg += "Controlled Agent (Team 0) WON"
                 elif win_signal == -1:
                     # Agent 1 won. This is OUR loss.
-                    outcome_msg += "Opponent (Green/Team 1) WON"
+                    outcome_msg += "Opponent (Team 1) WON"
                 else:
                     # Neither agent won, so it was a timeout.
                     outcome_msg += "Timeout"
@@ -200,7 +203,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env', default="running_competition", type=str, help="Name of the environment")
+    parser.add_argument('--env', default="wrestling", type=str, help="Name of the environment")
     parser.add_argument('--algo', default="ppo", type=str, help="ppo/sac")
     parser.add_argument('--max_episodes', default=2000, type=int)
     parser.add_argument('--seed', default=1, type=int)

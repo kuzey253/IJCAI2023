@@ -153,16 +153,18 @@ class wrestling(OlympicsBase):
 
     def get_reward(self):
 
-        agent1_finished = self.agent_list[0].finished
-        agent2_finished = self.agent_list[1].finished
-        if agent1_finished and agent2_finished:
-            return [0., 0]
-        elif agent1_finished and not agent2_finished:
-            return [0., 1]
-        elif not agent1_finished and agent2_finished:
-            return [1., 0]
+        agent_0_is_out = self.agent_list[0].finished
+        agent_1_is_out = self.agent_list[1].finished
+
+        if agent_1_is_out:
+            # If Agent 1 is out, Agent 0 WINS.
+            return [100.0, 1]
+        elif agent_0_is_out:
+            # If Agent 0 is out, Agent 1 WINS (meaning Agent 0 loses).
+            return [-100.0, -1]
         else:
-            return [0,0]
+            # No one is out, the game is ongoing.
+            return [0.0, 0]
 
     def is_terminal(self):
 
