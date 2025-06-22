@@ -149,28 +149,44 @@ class table_hockey(OlympicsBase):
 
 
     def get_reward(self):
+        """
+        Determines the terminal reward and win_signal for table hockey.
+        The `check_win` logic is more complex, so we will use that.
+        
+        Returns: A list [value, win_signal]
+        """
+        winner = self.check_win() # This returns '0', '1', or '-1'
+
+        if winner == '0': # Agent 0 (left side) wins
+            return [100.0, 1]
+        elif winner == '1': # Agent 1 (right side) wins
+            return [100.0, -1]
+        else: # Game is ongoing or a draw
+            return [0.0, 0]
+
+    def check_win(self):
+        # This method seems complex. Let's simplify it based on the goal logic.
+        # A goal is scored when the puck (a type of agent) crosses a red line.
+        if not self.done:
+            return '-1' # Game not over
 
         ball_end_pos = None
-
-        for agent_idx in range(self.agent_num):
-            agent = self.agent_list[agent_idx]
-
+        for agent_idx, agent in enumerate(self.agent_list):
             if agent.type == 'ball' and agent.finished:
                 ball_end_pos = self.agent_pos[agent_idx]
+                break
 
-        if ball_end_pos is not None and ball_end_pos[0] < 400:
-            if self.agent_pos[0][0] < 400:
-                return [0.,1.]
-            else:
-                return [1., 0.]
-        elif ball_end_pos is not None and ball_end_pos[0] > 400:
-            if self.agent_pos[0][0] < 400:
-                return [1. ,0.]
-            else:
-                return [0., 1.]
+        if ball_end_pos is None:
+            return '-1' # No goal scored, timeout/draw
 
-        else:
-            return [0. ,0.]
+        # Goal on the right side (x > 400), so Agent 0 (left) scores. Winner is '0'.
+        if ball_end_pos[0] > 400:
+            return '0' 
+        # Goal on the left side (x < 400), so Agent 1 (right) scores. Winner is '1'.
+        elif ball_end_pos[0] < 400:
+            return '1'
+        
+        return '-1'
 
 
 
@@ -186,27 +202,6 @@ class table_hockey(OlympicsBase):
 
         return False
 
-    def check_win(self):
-        if self.done:
-            self.ball_end_pos = None
-            for agent_idx in range(self.agent_num):
-                agent = self.agent_list[agent_idx]
-                if agent.type == 'ball' and agent.finished:
-                    self.ball_end_pos = self.agent_pos[agent_idx]
-
-        if self.ball_end_pos is None:
-            return '-1'
-        else:
-            if self.ball_end_pos[0] < 400:
-                if self.agent_pos[0][0] < 400:
-                    return '1'
-                else:
-                    return '0'
-            elif self.ball_end_pos[0] > 400:
-                if self.agent_pos[0][0] < 400:
-                    return '0'
-                else:
-                    return '1'
 
     def render(self, info=None):
 

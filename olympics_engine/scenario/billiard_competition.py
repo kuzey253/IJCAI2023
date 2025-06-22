@@ -409,23 +409,7 @@ class billiard_competition(OlympicsBase):
         return False
 
 
-        # if self.step_cnt >= self.max_step:
-        #     return True
-
-
-
-
-
-        # if len(self.agent_list) == 1:       #all ball has been scored
-        #     return True
-        #
-        #
-        # if (self.player1_n_hit + self.player2_n_hit == self.max_n_hit*2):  #use up all the hit chance
-        #     round_end, _ = self._round_terminal()
-        #     if round_end:
-        #         return True
-
-        # return Fals
+        
 
     def get_reward(self):
         # if len(self.agent_list) == 1 and not self.white_ball_in:
