@@ -52,13 +52,13 @@ COLOR_TO_OBJECT = {
     'green': 'arc',
     'sky blue': 'ball',
     # 'orange': 3,
-    'grey': 'cross',
-    'purple': 'agent0',
+    'grey': 'cross', # arc in table hockey
+    # 'purple': 'agent0',
     'black': 'wall',
     'red': 'cross',
-    'blue': 'agent1',
+    'blue': 'agent 2',
     # 'white': 9,
-    'light red': 'agent0'
+    'light red': 'agent 1'
 }
 
 
