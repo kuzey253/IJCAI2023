@@ -35,7 +35,7 @@ def load_record(path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--map', default="football", type=str,
+    parser.add_argument('--map', default="curling-competition", type=str,
                         help='running/table-hockey/football/wrestling/billiard/curling/all/all_v2')
     parser.add_argument('--save_folder', default='logs', type=str,
                         help='Folder to save the GIFs')

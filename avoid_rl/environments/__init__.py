@@ -5,6 +5,8 @@ from .running import RunningEnv
 from .table_hockey import TableHockeyEnv
 from .wrestling import WrestlingEnv
 from .running_competition import RunningCompetitionEnv
+from .billiard_competition import BilliardCompetitionEnv
+from .curling_competition import CurlingCompetitionEnv
 
 # Mapping from environment name to the corresponding class
 ENV_REGISTRY = {
@@ -13,6 +15,8 @@ ENV_REGISTRY = {
     "table_hockey": TableHockeyEnv,
     "wrestling": WrestlingEnv,
     "running_competition": RunningCompetitionEnv,
+    "billiard_competition": BilliardCompetitionEnv,
+    "curling_competition": CurlingCompetitionEnv,
 }
 
 def make(env_name, map_id=None, map_config=None):

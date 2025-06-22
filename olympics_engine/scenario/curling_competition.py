@@ -348,9 +348,6 @@ class curling_competition(OlympicsBase):
 
     def is_terminal(self):
 
-        # if self.step_cnt >= self.max_step:
-        #     return True
-
         if (self.num_green + self.num_purple == self.max_n*2):
             if not self.release and self.round_step > self.round_max_step:
                 return True
@@ -363,13 +360,12 @@ class curling_competition(OlympicsBase):
                     else:
                         L.append(False)
                 return all(L)
-        else:
-            return False
+        
+        # --- THIS IS THE FIX ---
+        # If none of the above conditions were met, the game is not over.
+        return False
 
-        # for agent_idx in range(self.agent_num):
-        #     if self.agent_list[agent_idx].color == 'red' and (
-        #             self.agent_v[agent_idx][0] ** 2 + self.agent_v[agent_idx][1] ** 2) < 1e-5:
-        #         return True
+      
 
     def _round_terminal(self):
 
