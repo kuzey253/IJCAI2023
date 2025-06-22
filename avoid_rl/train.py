@@ -138,12 +138,16 @@ def main(args):
                 # The model selects an action based on the observation
                 action_idx, action_prob = models[agent_index].select_action(
                                 obs_agents[agent_index], train=not args.load_model)
+                # Warning: random_agent does not return "action_idx, action_prob" but returns a single action.
                 # action = actions_map.get(action_idx)
-                actions_res.append((action_idx, action_prob))
-            next_state, reward, done, info = env.step([actions_map.get(el[0]) for el in actions_res])
+                if models[agent_index].__class__.__name__ == 'random_agent':
+                    action = (action_idx, action_prob) 
+                else:
+                    action = actions_map.get(action_idx)
+                actions_res.append((action_idx, action_prob, action))
+            next_state, reward, done, info = env.step([el[-1] for el in actions_res])
             
             is_done_episode = done if isinstance(done, bool) else all(done)
-            
             
             if not args.load_model:
                 for agent_index in range(env.agent_num):
@@ -205,13 +209,13 @@ def main(args):
                         writer.add_scalar(f'metrics/{agent_index}_avg_reward_100', avg_reward, episode)
                         writer.add_scalar(f'metrics/{agent_index}_win_rate_100', win_rate, episode)
                     
-                    if not args.load_model and len(model.buffer) > 0:
-                        model.update(episode)
+                    if not args.load_model and len(models[agent_index].buffer) > 0:
+                        models[agent_index].update(episode)
 
                     if check_convergence(episode, records_win[agent_index], records_reward[agent_index]):
                         episode = args.max_episodes + 1
                     
-                    break # Break inner while loop
+                break # Break inner while loop
         
         # --- NEW: Close the environment for this episode ---
         env.close()
@@ -219,15 +223,18 @@ def main(args):
         if episode > args.max_episodes:
             break
 
-        if episode % args.save_interval == 0 and not args.load_model:
-            print(f"\n--- Saving model at episode {episode} ---\n")
-            model.save(run_dir, episode)
+        for agent_index in range(env.agent_num):
+            if episode % args.save_interval == 0 and not args.load_model and models[agent_index].__class__.__name__ != 'random_agent':
+                print(f"\n--- Saving model at episode {episode} ---\n")
+                models[agent_index].save(run_dir, episode)
     
     # --- Final Save ---
     if not args.load_model:
-        final_episode_num = min(episode, args.max_episodes)
-        print(f"--- Saving final model from episode {final_episode_num} ---")
-        model.save(run_dir, f"final_ep{final_episode_num}")
+        for agent_index in range(env.agent_num):
+            final_episode_num = min(episode, args.max_episodes)
+            print(f"--- Saving final model from episode {final_episode_num} ---")
+            if models[agent_index].__class__.__name__ != 'random_agent':
+                models[agent_index].save(run_dir, f"{agent_index}_final_ep{final_episode_num}")
 
     if writer:
         writer.close()

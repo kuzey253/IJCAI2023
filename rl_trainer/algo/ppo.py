@@ -78,6 +78,8 @@ class PPO:
         return action.item(), action_prob[:, action.item()].item()
 
     def get_value(self, state):
+        if not self.use_cnn:
+            state = state.flatten()
         state = torch.from_numpy(state)
         with torch.no_grad():
             value = self.critic_net(state)
