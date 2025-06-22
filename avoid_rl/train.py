@@ -151,9 +151,9 @@ def main(args):
                                         actions_res[agent_index][1],
                                    reward[agent_index], next_state[agent_index], is_done_episode)
                     models[agent_index].store_transition(trans)
-                obs_agents[agent_index] = next_state[agent_index]
+                    obs_agents[agent_index] = next_state[agent_index]
             
-                agent_total_rewards[agent_index] += reward[agent_index]
+                    agent_total_rewards[agent_index] += reward[agent_index]
 
             state = next_state
             
