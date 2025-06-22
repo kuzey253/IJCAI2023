@@ -22,6 +22,7 @@ from rl_trainer.algo.ppo import PPO
 from utils.config import actions_map
 from utils.convergence import check_convergence
 from olympics_engine.generator import create_scenario
+from olympics_engine.agent import random_agent
 
 def main(args):
     print("Creating a dummy environment for initialization...")
@@ -60,8 +61,14 @@ def main(args):
     
     # --- AGENT SETUP ---
     # TODO: Set model type based on arguments
-    model = PPO(run_dir=run_dir if not args.load_model else None, 
+    if args.algo == 'ppo':
+        model = PPO(run_dir=run_dir if not args.load_model else None, 
                 obs_dim=obs_dim, action_dim=action_dim, **ppo_hparams)
+    elif args.algo == 'ppo-world':
+        model = PPO(run_dir=run_dir if not args.load_model else None, 
+                obs_dim=obs_dim, action_dim=action_dim, world=True, **ppo_hparams)
+    else:
+        raise NotImplementedError(f"Algorithm {args.algo} is not implemented yet.")
     
     if args.load_model:
         # Adjusted path to be more robust
@@ -76,8 +83,25 @@ def main(args):
     record_win = deque(maxlen=100)
     record_reward = deque(maxlen=100)
     
-    from olympics_engine.agent import random_agent # TODO: Opponent agent should be set up based on args
-    opponent_agent = random_agent()
+     # TODO: Opponent agent should be set up based on args
+    if args.algo_opponent == 'ppo':
+        opponent_model = PPO(run_dir=run_dir if not args.load_model else None, 
+                             obs_dim=obs_dim, action_dim=action_dim, **ppo_hparams)
+        if args.load_model:
+            opponent_load_dir = os.path.join(str(Path(run_dir).parent.parent), args.env, f"run{args.load_run}")
+            opponent_model.load(opponent_load_dir, episode=args.load_episode)
+        opponent_agent = opponent_model
+    elif args.algo_opponent == 'ppo-world':
+        opponent_model = PPO(run_dir=run_dir if not args.load_model else None, 
+                             obs_dim=obs_dim, action_dim=action_dim, world=True, **ppo_hparams)
+        if args.load_model:
+            opponent_load_dir = os.path.join(str(Path(run_dir).parent.parent), args.env, f"run{args.load_run}")
+            opponent_model.load(opponent_load_dir, episode=args.load_episode)
+        opponent_agent = opponent_model
+    elif args.algo_opponent == 'random':
+        # If opponent is random, we use the random_agent class
+        # This should be defined in olympics_engine.agent
+        opponent_agent = random_agent()
     
     # This loop now controls the creation of environments
     while episode < args.max_episodes:
