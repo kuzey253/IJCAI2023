@@ -19,7 +19,7 @@ class football(OlympicsBase):
         # for wall in map['objects']:
         #     if wall.type == 'wall':
         #         wall.color='white'
-
+        self.meta_map = map
         super(football, self).__init__(map)
 
         self.game_name = 'football'
