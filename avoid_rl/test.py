@@ -83,9 +83,9 @@ def main(args):
     opponent_agent = random_agent()
 
     while True:
-        obs_flat = obs[0].flatten()
+        # obs_flat = obs[0].flatten()
         with torch.no_grad():
-            action_index, _ = model.select_action(obs_flat, train=False)
+            action_index, _ = model.select_action(obs[0], train=False)
         
         action_ctrl = actions_map.get(action_index)
         
@@ -126,5 +126,6 @@ if __name__ == '__main__':
     parser.add_argument("--load_best", type=str, choices=['overall', 'successful'], default=None, help="Load the best model based on a metric.")
     parser.add_argument("--seed", default=42, type=int)
     parser.add_argument("--capture_gif", action='store_true', help="Capture gameplay as a GIF.")
+    parser.add_argument("--use_cnn", action='store_true', help="Use CNN for the agent's network.")
     args = parser.parse_args()
     main(args)

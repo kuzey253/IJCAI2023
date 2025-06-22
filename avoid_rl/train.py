@@ -254,7 +254,8 @@ if __name__ == '__main__':
     parser.add_argument("-buffer_capacity", default=2048, type=int, help="Capacity of the replay buffer")
     parser.add_argument("-batch_size", default=64, type=int, help="Batch size for training")
     parser.add_argument("-max_grad_norm", default=0.5, type=float, help="Maximum gradient norm for clipping")
-    
+    parser.add_argument("--use_cnn", action='store_true', default=False, help="Use CNN for image-based environments")
+
     args = parser.parse_args()
     # Correcting a potential path issue if script is not in the project root
     if "avoid_rl" in base_dir:
