@@ -212,7 +212,7 @@ def main(args):
                     if not args.load_model and len(models[agent_index].buffer) > 0:
                         models[agent_index].update(episode)
 
-                    if check_convergence(episode, records_win[agent_index], records_reward[agent_index]):
+                    if check_convergence(episode, records_win[ctrl_agent_index], records_reward[ctrl_agent_index]):
                         episode = args.max_episodes + 1
                     
                 break # Break inner while loop

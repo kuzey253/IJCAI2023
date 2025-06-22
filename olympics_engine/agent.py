@@ -22,6 +22,10 @@ class random_agent:
         self.buffer.append(transition)
         self.counter += 1
 
+    def update(self, i_ep):
+        # Random agent does not update
+        pass
+
 
 
 
