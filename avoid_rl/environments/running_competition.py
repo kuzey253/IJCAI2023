@@ -53,7 +53,7 @@ class RunningCompetitionEnv:
 
     def step(self, action_list):
         # We need the action for the efficiency calculation
-        agent_action = action_list[0]
+        agent_action = action_list[0] # TODO: Handle multi-agent actions reward if needed
         
         obs, original_reward, done, info_from_game = self.game.step(action_list)
 

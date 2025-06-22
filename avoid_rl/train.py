@@ -32,6 +32,7 @@ def main(args):
     action_dim = len(actions_map)
     temp_env.close()
 
+    # TODO: Set hparams according to args
     ppo_hparams = {
         'lr': 0.0003,
         'gamma': 0.99,
@@ -58,6 +59,7 @@ def main(args):
         save_config(args, log_dir)
     
     # --- AGENT SETUP ---
+    # TODO: Set model type based on arguments
     model = PPO(run_dir=run_dir if not args.load_model else None, 
                 obs_dim=obs_dim, action_dim=action_dim, **ppo_hparams)
     
@@ -74,7 +76,7 @@ def main(args):
     record_win = deque(maxlen=100)
     record_reward = deque(maxlen=100)
     
-    from olympics_engine.agent import random_agent
+    from olympics_engine.agent import random_agent # TODO: Opponent agent should be set up based on args
     opponent_agent = random_agent()
     
     # This loop now controls the creation of environments
@@ -206,7 +208,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument("--save_interval", default=100, type=int)
     # Defaulting render to False is better for faster training
-    parser.add_argument("--render", action='store_true', default=True, help="Render the environment during training.")
+    parser.add_argument("--render", action='store_true', default=False, help="Render the environment during training.")
     parser.add_argument("--load_model", action='store_true', default=False)
     parser.add_argument("--load_run", default=1, type=int)
     parser.add_argument("--load_episode", default=100, type=int)
