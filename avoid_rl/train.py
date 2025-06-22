@@ -205,7 +205,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env', default="football", type=str, help="Name of the environment")
+    parser.add_argument('--env', default="curling_competition", type=str, help="Name of the environment")
     parser.add_argument('--algo', default="ppo", type=str, help="ppo/sac")
     parser.add_argument('--max_episodes', default=2000, type=int)
     parser.add_argument('--seed', default=1, type=int)
