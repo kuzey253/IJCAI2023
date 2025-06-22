@@ -47,6 +47,20 @@ IDX_TO_COLOR = {
     # 10: 'blue-2'
 }
 
+COLOR_TO_OBJECT = {
+    # 'light green': 0,
+    'green': 'arc',
+    'sky blue': 'ball',
+    # 'orange': 3,
+    'grey': 'cross',
+    'purple': 'agent0',
+    'black': 'wall',
+    'red': 'cross',
+    'blue': 'agent1',
+    # 'white': 9,
+    'light red': 'agent0'
+}
+
 
 
 
