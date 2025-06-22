@@ -34,13 +34,13 @@ def main(args):
 
     # TODO: Set hparams according to args
     ppo_hparams = {
-        'lr': 0.0003,
-        'gamma': 0.99,
-        'clip_param': 0.2,
-        'ppo_update_time': 10,
-        'buffer_capacity': 2048,
-        'batch_size': 64,
-        'max_grad_norm': 0.5,
+        'lr': args.lr,
+        'gamma': args.gamma,
+        'clip_param': args.clip_param,
+        'ppo_update_time': args.ppo_update_time,
+        'buffer_capacity': args.buffer_capacity,
+        'batch_size': args.batch_size,
+        'max_grad_norm': args.max_grad_norm,
     }
 
     ctrl_agent_index = 0
@@ -207,6 +207,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--env', default="wrestling", type=str, help="Name of the environment")
     parser.add_argument('--algo', default="ppo", type=str, help="ppo/sac")
+    parser.add_argument('--algo_opponent', default="random", type=str, help="random/ppo/sac")
     parser.add_argument('--max_episodes', default=2000, type=int)
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument("--save_interval", default=100, type=int)
@@ -215,6 +216,14 @@ if __name__ == '__main__':
     parser.add_argument("--load_model", action='store_true', default=False)
     parser.add_argument("--load_run", default=1, type=int)
     parser.add_argument("--load_episode", default=100, type=int)
+    # TODO: Hyperparameters for PPO
+    parser.add_argument("-lr", default=0.0003, type=float, help="Learning rate for the model")
+    parser.add_argument("-gamma", default=0.99, type=float, help="Discount factor for rewards")
+    parser.add_argument("-clip_param", default=0.2, type=float, help="PPO clip parameter")
+    parser.add_argument("-ppo_update_time", default=10, type=int, help="Number of PPO updates per episode")
+    parser.add_argument("-buffer_capacity", default=2048, type=int, help="Capacity of the replay buffer")
+    parser.add_argument("-batch_size", default=64, type=int, help="Batch size for training")
+    parser.add_argument("-max_grad_norm", default=0.5, type=float, help="Maximum gradient norm for clipping")
     
     args = parser.parse_args()
     # Correcting a potential path issue if script is not in the project root
