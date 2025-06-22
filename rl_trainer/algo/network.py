@@ -52,6 +52,7 @@ class Critic(nn.Module):
     def forward(self, x):
         if self.is_cnn:
             x = self.encoder(x)
+            
         x = F.relu(self.linear_in(x))
         value = self.state_value(x)
         return value

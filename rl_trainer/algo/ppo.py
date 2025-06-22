@@ -65,6 +65,8 @@ class PPO:
 
 
     def select_action(self, state, train=True):
+        if not self.use_cnn:
+            state = state.flatten()
         state = torch.from_numpy(state).float().unsqueeze(0).to(device)
         with torch.no_grad():
             action_prob = self.actor_net(state).to(device)
@@ -105,16 +107,16 @@ class PPO:
                 Gt_index = Gt[index].view(-1, 1)
                 
                 # Use squeeze(1) as in your original file, assuming state shape is (batch, 1, features)
-                V = self.critic_net(state[index].squeeze(1))
+                V = self.critic_net(state[index].flatten(-2,-1).squeeze(1))
                 delta = Gt_index - V
                 advantage = delta.detach()
 
-                action_prob = self.actor_net(state[index].squeeze(1)).gather(1, action[index])
+                action_prob = self.actor_net(state[index].flatten(-2,-1).squeeze(1)).gather(1, action[index])
                 ratio = (action_prob / old_action_log_prob[index])
                 surr1 = ratio * advantage
                 surr2 = torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param) * advantage
                 
-                full_dist = self.actor_net(state[index].squeeze(1))
+                full_dist = self.actor_net(state[index].flatten(-2,-1).squeeze(1))
                 dist_entropy = Categorical(full_dist).entropy()
 
                 #action_loss = -torch.min(surr1, surr2).mean()

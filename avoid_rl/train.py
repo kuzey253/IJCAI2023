@@ -80,8 +80,9 @@ def main(args):
     training_maps = list(range(1, 11))
     # --- TRAINING LOOP ---
     episode = 0
-    record_win = deque(maxlen=100)
-    record_reward = deque(maxlen=100)
+    records_win = [deque(maxlen=100), deque(maxlen=100)]  # Two deques for two agents
+    records_reward = [deque(maxlen=100), deque(maxlen=100)]  #
+
     
      # TODO: Opponent agent should be set up based on args
     if args.algo_opponent == 'ppo':
@@ -122,35 +123,39 @@ def main(args):
         if args.render:
             env.render()
         
-        obs_ctrl_agent = state[ctrl_agent_index].flatten()
+        # obs_ctrl_agent = state[ctrl_agent_index].flatten()
+        models = [model, opponent_agent]
+        obs_agents = state.copy()  # Copy the state for each agent
         
         episode += 1
-        total_reward = 0
+        agent_total_rewards = [0, 0]
         
         # This inner loop runs one full episode on the newly created map
         while True:
-            action_ctrl_idx, action_prob = model.select_action(
-                obs_ctrl_agent, train=not args.load_model)
-            action_ctrl = actions_map.get(action_ctrl_idx)
-            
-            if env.agent_num > 1:
-                action_opponent = opponent_agent.act(state[1-ctrl_agent_index])
-                action = [action_ctrl, action_opponent] if ctrl_agent_index == 0 else [action_opponent, action_ctrl]
-            else:
-                action = [action_ctrl]
-
-            next_state, reward, done, info = env.step(action)
+            actions_res = []
+            # Iterate through each agent in the environment
+            for agent_index in range(env.agent_num):
+                # The model selects an action based on the observation
+                action_idx, action_prob = models[agent_index].select_action(
+                                obs_agents[agent_index], train=not args.load_model)
+                # action = actions_map.get(action_idx)
+                actions_res.append((action_idx, action_prob))
+            next_state, reward, done, info = env.step([actions_map.get(el[0]) for el in actions_res])
             
             is_done_episode = done if isinstance(done, bool) else all(done)
             
-            if not args.load_model:
-                trans = Transition(obs_ctrl_agent, action_ctrl_idx, action_prob,
-                                   reward[ctrl_agent_index], next_state[ctrl_agent_index].flatten(), is_done_episode)
-                model.store_transition(trans)
             
-            obs_ctrl_agent = next_state[ctrl_agent_index].flatten()
+            if not args.load_model:
+                for agent_index in range(env.agent_num):
+                    trans = Transition(state[agent_index], actions_res[agent_index][0],
+                                        actions_res[agent_index][1],
+                                   reward[agent_index], next_state[agent_index], is_done_episode)
+                    models[agent_index].store_transition(trans)
+                obs_agents[agent_index] = next_state[agent_index]
+            
+                agent_total_rewards[agent_index] += reward[agent_index]
+
             state = next_state
-            total_reward += reward[ctrl_agent_index]
             
             if args.render:
                 env.render()
@@ -181,31 +186,32 @@ def main(args):
                     outcome_msg += "Timeout"
                 
                 # Now, let's record our metrics based on our controlled agent
-                record_win.append(win_is) # record_win is ONLY for our agent finishing.
-                record_reward.append(total_reward)
-                
-                # Calculate stats
-                win_rate = sum(record_win) / len(record_win) if len(record_win) > 0 else 0.0
-                avg_reward = sum(record_reward) / len(record_reward) if len(record_reward) > 0 else 0.0
-                
-                # Print the comprehensive log line
-                print(f"Epi: {episode}, Env: {args.env}, R: {total_reward:.2f}, "
-                      f"AvgR (last {len(record_reward)}): {avg_reward:.2f}, "
-                      f"WinRate (last {len(record_win)}): {win_rate:.2f} | {outcome_msg}")
+                for agent_index in range(env.agent_num):
+                    records_win[agent_index].append(win_is) # record_win is ONLY for our agent finishing.
+                    records_reward[agent_index].append(agent_total_rewards[agent_index])
+                    
+                    # Calculate stats
+                    win_rate = sum(records_win[agent_index]) / len(records_win[agent_index]) if len(records_win[agent_index]) > 0 else 0.0
+                    avg_reward = sum(records_reward[agent_index]) / len(records_reward[agent_index]) if len(records_reward[agent_index]) > 0 else 0.0
+                    
+                    # Print the comprehensive log line
+                    print(f"Epi: {episode}, Env: {args.env}, R: {agent_total_rewards[agent_index]:.2f}, "
+                        f"AvgR (last {len(records_reward[agent_index])}): {avg_reward:.2f}, "
+                        f"WinRate (last {len(records_win[agent_index])}): {win_rate:.2f} | {outcome_msg}")
 
-                # --- The rest of the block is unchanged ---
-                if writer:
-                    writer.add_scalar('metrics/total_reward', total_reward, episode)
-                    writer.add_scalar('metrics/avg_reward_100', avg_reward, episode)
-                    writer.add_scalar('metrics/win_rate_100', win_rate, episode)
-                
-                if not args.load_model and len(model.buffer) > 0:
-                    model.update(episode)
+                    # --- The rest of the block is unchanged ---
+                    if writer:
+                        writer.add_scalar(f'metrics/{agent_index}_total_reward', agent_total_rewards[agent_index], episode)
+                        writer.add_scalar(f'metrics/{agent_index}_avg_reward_100', avg_reward, episode)
+                        writer.add_scalar(f'metrics/{agent_index}_win_rate_100', win_rate, episode)
+                    
+                    if not args.load_model and len(model.buffer) > 0:
+                        model.update(episode)
 
-                if check_convergence(episode, record_win, record_reward):
-                    episode = args.max_episodes + 1
-                
-                break # Break inner while loop
+                    if check_convergence(episode, records_win[agent_index], records_reward[agent_index]):
+                        episode = args.max_episodes + 1
+                    
+                    break # Break inner while loop
         
         # --- NEW: Close the environment for this episode ---
         env.close()
