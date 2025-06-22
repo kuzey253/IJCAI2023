@@ -46,7 +46,7 @@ parser.add_argument("--load_run", default=2, type=int)
 parser.add_argument("--load_episode", default=900, type=int)
 
 
-device = 'cuda'
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 RENDER = True
 actions_map = {0: [-100, -30], 1: [-100, -18], 2: [-100, -6], 3: [-100, 6], 4: [-100, 18], 5: [-100, 30], 6: [-40, -30],
                7: [-40, -18], 8: [-40, -6], 9: [-40, 6], 10: [-40, 18], 11: [-40, 30], 12: [20, -30], 13: [20, -18],
