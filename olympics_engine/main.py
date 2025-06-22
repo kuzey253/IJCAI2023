@@ -31,11 +31,11 @@ def load_record(path):
     filejson = json.load(file)
     return filejson
 
-RENDER = True  # Set to True if you want to render the game
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--map', default="seeks", type=str,
+    parser.add_argument('--map', default="football", type=str,
                         help='running/table-hockey/football/wrestling/billiard/curling/all/all_v2')
     parser.add_argument('--save_folder', default='logs', type=str,
                         help='Folder to save the GIFs')
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", default=1, type=int)
     args = parser.parse_args()
 
-    RENDER = args.render
+    RENDER = True#args.render
 
     for i in range(1):
         if 'all' not in args.map:

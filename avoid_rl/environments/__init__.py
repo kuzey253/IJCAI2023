@@ -10,7 +10,7 @@ from .running_competition import RunningCompetitionEnv
 ENV_REGISTRY = {
     "football": FootballEnv,
     "running": RunningEnv,
-    "table-hockey": TableHockeyEnv,
+    "table_hockey": TableHockeyEnv,
     "wrestling": WrestlingEnv,
     "running_competition": RunningCompetitionEnv,
 }
