@@ -42,6 +42,7 @@ def main(args):
         'buffer_capacity': args.buffer_capacity,
         'batch_size': args.batch_size,
         'max_grad_norm': args.max_grad_norm,
+        'use_cnn': args.use_cnn
     }
 
     ctrl_agent_index = 0

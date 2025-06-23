@@ -53,7 +53,7 @@ def main(args):
     action_dim = len(actions_map)
     
     # --- AGENT SETUP ---
-    model = PPO(run_dir=None, obs_dim=obs_dim, action_dim=action_dim)
+    model = PPO(run_dir=None, obs_dim=obs_dim, action_dim=action_dim, use_cnn=args.use_cnn)
     
     run_dir_base = os.path.join(base_dir, "rl_trainer", "models", args.env, f"run{args.load_run}")
 
