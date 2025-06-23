@@ -16,6 +16,21 @@ from rl_trainer.algo.ppo import PPO
 from utils.config import actions_map
 from environments import make # Use the new factory
 
+def find_agent_subdir(run_dir_base, agent_index=0):
+    """
+    Checks if agent_{agent_index} directory exists in run_dir_base.
+    Returns the path if it exists, else returns run_dir_base.
+    """
+    agent_dir = os.path.join(run_dir_base, f"agent_{agent_index}")
+    if os.path.isdir(agent_dir):
+        # Find the latest timestamped subdir
+        subdirs = [d for d in os.listdir(agent_dir) if os.path.isdir(os.path.join(agent_dir, d))]
+        if subdirs:
+            latest_subdir = max(subdirs)
+            return os.path.join(agent_dir, latest_subdir)
+        return agent_dir
+    return run_dir_base
+
 def find_latest_best_model(run_dir_base, metric):
     best_model_dir = os.path.join(run_dir_base, 'best_models')
     if not os.path.isdir(best_model_dir):
@@ -57,13 +72,17 @@ def main(args):
     
     run_dir_base = os.path.join(base_dir, "rl_trainer", "models", args.env, f"run{args.load_run}")
 
+    # --- NEW: Check for agent_0 subdir for loading ---
+    agent_index = 0  # Default to agent_0
+    run_dir_to_load = find_agent_subdir(run_dir_base, agent_index=agent_index)
+
     if args.load_best:
         print(f"[INFO] Finding best '{args.load_best}' model for env '{args.env}' in run {args.load_run}...")
-        load_dir, episode_to_load = find_latest_best_model(run_dir_base, args.load_best)
+        load_dir, episode_to_load = find_latest_best_model(run_dir_to_load, args.load_best)
         if not load_dir:
-            sys.exit(f"\n[ERROR] Could not find any best '{args.load_best}' model in {run_dir_base}")
+            sys.exit(f"\n[ERROR] Could not find any best '{args.load_best}' model in {run_dir_to_load}")
     else:
-        load_dir = os.path.join(run_dir_base, "trained_model")
+        load_dir = os.path.join(run_dir_to_load, "trained_model")
         episode_to_load = args.load_episode
 
     print(f"[INFO] Loading model: '{episode_to_load}' from '{load_dir}'")

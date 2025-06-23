@@ -79,6 +79,7 @@ def main(args):
     Transition = namedtuple('Transition', ['state', 'action', 'a_log_prob', 'reward', 'next_state', 'done'])
     
     training_maps = list(range(1, 11))
+    test_map_id = args.test_id 
     # --- TRAINING LOOP ---
     episode = 0
     records_win = [deque(maxlen=100), deque(maxlen=100)]  # Two deques for two agents
@@ -114,6 +115,12 @@ def main(args):
             map_id_to_use = current_map_id
             # ... (rest of map cycling logic) ...
             print(f"\n--- Starting Episode {episode+1} on Map ID: {map_id_to_use} ---")
+
+        # Skip the test map if specified    
+        if args.test_id is not None and episode == args.test_id:
+            print(f"Skipping episode {episode + 1} for testing purposes.")
+            episode += 1
+            continue
 
         # The make function now handles the arguments correctly for any env
         env = make(args.env, map_id=map_id_to_use)#map_id_to_use
@@ -227,7 +234,12 @@ def main(args):
         for agent_index in range(env.agent_num):
             if episode % args.save_interval == 0 and not args.load_model and models[agent_index].__class__.__name__ != 'random_agent':
                 print(f"\n--- Saving model at episode {episode} ---\n")
-                models[agent_index].save(run_dir, episode)
+                # Set save path name to include agent index and datetime
+                run_dir_agent = os.path.join(run_dir, f"agent_{agent_index}") # , datetime.datetime.now().strftime("%Y%m%d_%H"))
+                if not os.path.exists(run_dir_agent):
+                    os.makedirs(run_dir_agent)
+                models[agent_index].save(run_dir_agent, episode)
+                
     
     # --- Final Save ---
     if not args.load_model:
@@ -235,7 +247,11 @@ def main(args):
             final_episode_num = min(episode, args.max_episodes)
             print(f"--- Saving final model from episode {final_episode_num} ---")
             if models[agent_index].__class__.__name__ != 'random_agent':
-                models[agent_index].save(run_dir, f"{agent_index}_final_ep{final_episode_num}")
+                run_dir_agent = os.path.join(run_dir, f"agent_{agent_index}") # , datetime.datetime.now().strftime("%Y%m%d_%H"))
+                                              
+                if not os.path.exists(run_dir_agent):
+                    os.makedirs(run_dir_agent)
+                models[agent_index].save(run_dir_agent, f"{agent_index}_final_ep{final_episode_num}")
 
     if writer:
         writer.close()
@@ -249,6 +265,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_episodes', default=2000, type=int)
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument("--save_interval", default=100, type=int)
+    parser.add_argument("--test_id", default=None, type=int, help="Map ID for testing the agent")
     # Defaulting render to False is better for faster training
     parser.add_argument("--render", action='store_true', default=False, help="Render the environment during training.")
     parser.add_argument("--load_model", action='store_true', default=False)
