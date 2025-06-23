@@ -69,6 +69,8 @@ class PPO:
             state = state.flatten()
         state = torch.from_numpy(state).float().unsqueeze(0).to(device)
         with torch.no_grad():
+            if self.use_cnn:
+                state = state.unsqueeze(0) # Add channel dimension for CNN
             action_prob = self.actor_net(state).to(device)
         c = Categorical(action_prob)
         if train:
@@ -82,6 +84,8 @@ class PPO:
             state = state.flatten()
         state = torch.from_numpy(state)
         with torch.no_grad():
+            if self.use_cnn:
+                state = state.unsqueeze(0) # Add channel dimension for CNN
             value = self.critic_net(state)
         return value.item()
 
@@ -108,17 +112,21 @@ class PPO:
             for index in BatchSampler(SubsetRandomSampler(range(len(self.buffer))), self.batch_size, False):
                 Gt_index = Gt[index].view(-1, 1)
                 
+                if not self.use_cnn:
+                    f_state = state[index].flatten(-2, -1).squeeze(1)  # Flatten the state for CNN if needed
+                else:
+                    f_state = state[index].unsqueeze(1)  # Add channel dimension for CNN
                 # Use squeeze(1) as in your original file, assuming state shape is (batch, 1, features)
-                V = self.critic_net(state[index].flatten(-2,-1).squeeze(1))
+                V = self.critic_net(f_state)
                 delta = Gt_index - V
                 advantage = delta.detach()
 
-                action_prob = self.actor_net(state[index].flatten(-2,-1).squeeze(1)).gather(1, action[index])
+                action_prob = self.actor_net(f_state).gather(1, action[index])
                 ratio = (action_prob / old_action_log_prob[index])
                 surr1 = ratio * advantage
                 surr2 = torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param) * advantage
                 
-                full_dist = self.actor_net(state[index].flatten(-2,-1).squeeze(1))
+                full_dist = self.actor_net(f_state)
                 dist_entropy = Categorical(full_dist).entropy()
 
                 #action_loss = -torch.min(surr1, surr2).mean()
