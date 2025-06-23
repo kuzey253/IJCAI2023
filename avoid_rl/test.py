@@ -91,15 +91,30 @@ def main(args):
         print(f"[INFO] ✓ PPO model loaded successfully.")
     except Exception as e:
         sys.exit(f"\n[ERROR] Failed to load PPO model: {e}")
+    
+    # --- OPPONENT AGENT SETUP ---
+    from olympics_engine.agent import random_agent
+    opponent_agent = None
+    if env.agent_num > 1:
+        # Try to load PPO opponent if its directory exists, else use random_agent
+        opponent_dir = find_agent_subdir(run_dir_base, agent_index=1)
+        opponent_model_path = os.path.join(opponent_dir, "trained_model")
+        if os.path.isdir(opponent_model_path):
+            opponent_agent = PPO(run_dir=None, obs_dim=obs_dim, action_dim=action_dim, use_cnn=args.use_cnn)
+            try:
+                opponent_agent.load(opponent_model_path, episode=episode_to_load)
+                print(f"[INFO] ✓ PPO opponent model loaded successfully.")
+            except Exception as e:
+                print(f"[WARN] Failed to load PPO opponent model, using random_agent instead: {e}")
+                opponent_agent = random_agent()
+        else:
+            opponent_agent = random_agent()
 
     # --- RUN EPISODE ---
     obs = env.reset()
     done = False
     frames = []
-    total_reward = 0
-
-    from olympics_engine.agent import random_agent
-    opponent_agent = random_agent()
+    total_reward = [0 for _ in range(env.agent_num)]  # Track reward for each agent
 
     while True:
         # obs_flat = obs[0].flatten()
@@ -109,13 +124,20 @@ def main(args):
         action_ctrl = actions_map.get(action_index)
         
         if env.agent_num > 1:
-            action_opponent = opponent_agent.act(obs[1])
+            if isinstance(opponent_agent, PPO):
+                action_opponent_idx, _ = opponent_agent.select_action(obs[1], train=False)
+                action_opponent = actions_map.get(action_opponent_idx)
+            else:
+                action_opponent = opponent_agent.act(obs[1]) # Tuple
             action = [action_ctrl, action_opponent]
         else:
             action = [action_ctrl]
 
         obs, reward, done, info = env.step(action)
-        total_reward += reward[0]
+
+        # Update total_reward for each agent 
+        for agent_index in range(env.agent_num):
+            total_reward[agent_index] += reward[agent_index]
 
         env.render()
         if args.capture_gif:
@@ -128,7 +150,7 @@ def main(args):
         if is_done_episode:
             break
     
-    print(f"Episode finished. Total Reward: {total_reward:.2f}. Info: {info}")
+    print(f"Episode finished. Total Rewards: {[f'{r:.2f}' for r in total_reward]}. Info: {info}")
     env.close()
 
     # Save GIF
